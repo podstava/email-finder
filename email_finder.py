@@ -1,8 +1,16 @@
 import os
 import argparse
 import logging
+import csv
 
 SUPPORTED_FILE_TYPES = ['.csv']
+
+
+def csv_reader(filepath):
+    with open(filepath, 'rb') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            yield row
 
 
 def main():
@@ -26,6 +34,10 @@ def main():
         if file_ext not in SUPPORTED_FILE_TYPES:
             logger.error('File type not supported.')
             return
+
+        for row in csv_reader(args.file):
+            print row
+
     else:
         logger.error('File doesn\'t exist.')
         return
