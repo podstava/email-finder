@@ -7,7 +7,7 @@ SUPPORTED_FILE_TYPES = ['.csv', '.xls']
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--file', 'Path to data.')
+    parser.add_argument('-f', '--file', help='Path to data.', required=True)
     args = parser.parse_args()
 
     logger = logging.getLogger(__name__)
