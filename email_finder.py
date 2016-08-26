@@ -2,6 +2,7 @@ import os
 import argparse
 import logging
 from validate_email import validate_email
+from google import search as google_search
 
 SUPPORTED_FILE_TYPES = ['.csv', '.xls']
 
@@ -20,6 +21,11 @@ def main():
         if file_ext not in SUPPORTED_FILE_TYPES:
             logger.log(logging.ERROR, 'File type not supported.')
             return
+
+def parse_domain(company_name):
+    domain = list(google_search(company_name, stop=1, num=1))[0]
+    return domain[11:-1]
+
 
 def make_variations(fname, lname, domain):
     fchar = fname[0]
