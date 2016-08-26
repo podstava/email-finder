@@ -2,8 +2,38 @@ import os
 import argparse
 import logging
 from validate_email import validate_email
-from google import search as google_search
+# from google import search as google_search
 import csv
+
+from selenium import webdriver, common
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+def google_search(company_name):
+    driver = webdriver.Firefox()
+    driver.get("http://www.google.com")
+    input_element = driver.find_element_by_name("q")
+    try:
+        input_element.send_keys(company_name)
+        input_element.submit()
+
+        RESULTS_LOCATOR = "//div/cite"
+
+        WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.XPATH, RESULTS_LOCATOR)))
+
+        page1_results = driver.find_elements(By.XPATH, RESULTS_LOCATOR)
+
+        for item in page1_results:
+            return item.text
+        input_element.clear()
+    except common.exceptions.TimeoutException:
+        driver.quit()
+        driver = webdriver.Firefox()
+        driver.get("http://www.google.com")
+
 
 SUPPORTED_FILE_TYPES = ['.csv']
 
@@ -61,7 +91,7 @@ def main():
 def parse_domain(company_name):
     if 'freelance' in company_name or 'google' in company_name:
         return 'gmail.com'
-    domain = list(google_search(company_name, stop=1, num=1))[0]
+    domain = list(google_search(company_name))[0]
     if 'https://' in domain:
         domain = domain[12:-1]
         if '/' in domain:
