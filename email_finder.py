@@ -72,13 +72,12 @@ def main():
         for row in csv_reader(args.file):
             if counter == 1000:
                 break
-            if counter > 0:
-                try:
-                    name, lastname = row[0].split(' ')
-                    domain = parse_domain(row[1])
-                    validate(make_variations(name, lastname, domain))
-                except ValueError:
-                    pass
+            try:
+                name, lastname = row[0].split(' ')
+                domain = parse_domain(row[1])
+                validate(make_variations(name, lastname, domain))
+            except ValueError:
+                pass
 
             counter += 1
         print str(done)  +  '/' + str(counter) + ' emails found'
