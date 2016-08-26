@@ -1,6 +1,7 @@
 import os
 import argparse
 import logging
+from validate_email import validate_email
 
 SUPPORTED_FILE_TYPES = ['.csv', '.xls']
 
@@ -48,6 +49,12 @@ def make_variations(fname, lname, domain):
         fchar + lchar + '@gmail.com',
         ]
     return a
+
+def validate(possible_emails_list):
+    for x in possible_emails_list:
+        if validate_email(x,verify=True):
+            return x
+    return 'Not found'
 
 if __name__ == '__main__':
     main()
