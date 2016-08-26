@@ -3,24 +3,47 @@ import argparse
 import logging
 from validate_email import validate_email
 from google import search as google_search
+import csv
 
-SUPPORTED_FILE_TYPES = ['.csv', '.xls']
+SUPPORTED_FILE_TYPES = ['.csv']
+
+
+def csv_reader(filepath):
+    with open(filepath, 'rb') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            yield row
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--file', 'Path to data.')
-
-    logger = logging.Logger(__name__, logging.DEBUG)
+    parser.add_argument('-f', '--file', help='Path to data.', required=True)
     args = parser.parse_args()
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('[%(levelname)s] - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
     if os.path.exists(args.file):
         file_name, file_ext = os.path.splitext(args.file)
         if not file_ext:
-            logger.log(logging.ERROR, 'File without extension.')
+            logger.error('File without extension.')
             return
         if file_ext not in SUPPORTED_FILE_TYPES:
-            logger.log(logging.ERROR, 'File type not supported.')
+            logger.error('File type not supported.')
             return
+
+        for row in csv_reader(args.file):
+            print row
+
+    else:
+        logger.error('File doesn\'t exist.')
+        return
+
 
 def parse_domain(company_name):
     domain = list(google_search(company_name, stop=1, num=1))[0]
