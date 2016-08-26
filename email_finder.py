@@ -2,7 +2,7 @@ import os
 import argparse
 import logging
 
-SUPPORTED_FILE_TYPES = ['.csv', '.xls']
+SUPPORTED_FILE_TYPES = ['.csv']
 
 
 def main():
