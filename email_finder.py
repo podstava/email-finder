@@ -20,5 +20,34 @@ def main():
             logger.log(logging.ERROR, 'File type not supported.')
             return
 
+def make_variations(fname, lname, domain):
+    fchar = fname[0]
+    lchar = lname[0]
+    a = [
+        fname + '@' + domain,
+        fname + lname + '@' + domain,
+        fname + '_' + lname + '@' + domain,
+        fname + '.' + lname + '@' + domain,
+        fchar + lname + '@' + domain,
+        fchar + '_' + lname + '@' + domain,
+        fchar + '.' + lname + '@' + domain,
+        fname + lchar + '@' + domain,
+        fname + '_' + lchar + '@' + domain,
+        fname + '.' + lchar + '@' + domain,
+        fchar + lchar + '@' + domain,
+        fname + '@gmail.com',
+        fname + lname + '@gmail.com',
+        fname + '_' + lname + '@gmail.com',
+        fname + '.' + lname + '@gmail.com',
+        fchar + lname + '@gmail.com',
+        fchar + '_' + lname + '@gmail.com',
+        fchar + '.' + lname + '@gmail.com',
+        fname + lchar + '@gmail.com',
+        fname + '_' + lchar + '@gmail.com',
+        fname + '.' + lchar + '@gmail.com',
+        fchar + lchar + '@gmail.com',
+        ]
+    return a
+
 if __name__ == '__main__':
     main()
