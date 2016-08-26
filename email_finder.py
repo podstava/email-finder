@@ -8,17 +8,28 @@ SUPPORTED_FILE_TYPES = ['.csv', '.xls']
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--file', 'Path to data.')
-
-    logger = logging.Logger(__name__, logging.DEBUG)
     args = parser.parse_args()
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('[%(levelname)s] - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
     if os.path.exists(args.file):
         file_name, file_ext = os.path.splitext(args.file)
         if not file_ext:
-            logger.log(logging.ERROR, 'File without extension.')
+            logger.error('File without extension.')
             return
         if file_ext not in SUPPORTED_FILE_TYPES:
-            logger.log(logging.ERROR, 'File type not supported.')
+            logger.error('File type not supported.')
             return
+    else:
+        logger.error('File doesn\'t exist.')
+        return
+
 
 def make_variations(fname, lname, domain):
     fchar = fname[0]
