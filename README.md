@@ -1,9 +1,9 @@
-Email search tool
+<h2>Email find tool</h2>
 
-Searchs emails by name and company
-Now working just with FisrtName and LastName
-Name such as  'Ahmed ibn zalupa' will not be parsed
+Finds emails by name and company
+<br>Now working just with FisrtName and LastName.
+<br>Name such as  'Ahmed ibn zalupa' will not be parsed cause contains more than two words
 
-Usage:
-python email-finder -f path/to/file
+<br>Usage:
+<br>python email-finder -f path/to/file
 
