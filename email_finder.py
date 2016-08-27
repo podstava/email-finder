@@ -1,6 +1,8 @@
 import os
 import argparse
 import logging
+
+import timeit
 from validate_email import validate_email
 from urlparse import urlparse
 # from google import search as google_search
@@ -12,8 +14,17 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('[%(levelname)s] - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
+
 def google_search(company_name):
-    print '-----starting search-------'
+    logger.info('starting search for domain of {}'.format(company_name))
     driver = webdriver.Firefox()
     driver.get("http://www.google.com")
     input_element = driver.find_element_by_name("q")
@@ -24,21 +35,20 @@ def google_search(company_name):
         RESULTS_LOCATOR = "//div/cite"
 
         WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.XPATH, RESULTS_LOCATOR)))
+            EC.visibility_of_element_located((By.XPATH, RESULTS_LOCATOR)))
 
         page1_results = driver.find_elements(By.XPATH, RESULTS_LOCATOR)
         res_list = []
         for item in page1_results[0:4]:
-            print 'url found ' + item.text
-            res_list.append(item.text)
+            logger.info('url found {}'.format(item.text))
+            res_list += [item.text]
         driver.close()
         return res_list
-        # input_element.clear()
     except common.exceptions.TimeoutException:
+        logger.info('got timeout')
         driver.close()
         driver = webdriver.Firefox()
         driver.get("http://www.google.com")
-
 
 
 SUPPORTED_FILE_TYPES = ['.csv']
@@ -51,20 +61,10 @@ def csv_reader(filepath):
             yield row
 
 
-done = 0
 def main():
-    counter = 0
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--file', help='Path to data.', required=True)
     args = parser.parse_args()
-
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('[%(levelname)s] - %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
 
     if os.path.exists(args.file):
         file_name, file_ext = os.path.splitext(args.file)
@@ -75,22 +75,26 @@ def main():
             logger.error('File type not supported.')
             return
 
+        counter = 0
+        done = 0
+        limit = 100
+        start = timeit.default_timer()
         for row in csv_reader(args.file):
-            if counter == 1000:
+            if counter == limit:
                 break
             try:
-                name, lastname = row[0].split(' ')
+                name, lastname = row[0].lower().split(' ')
                 domain = parse_domains(row[1])
-                validate(make_variations(name, lastname, domain))
-                percents = (counter * 100) / 1000
-                print str(percents) + '% done'
+                done += 1 if validate(make_variations(name, lastname, domain)) else 0
+                percents = (counter * 100) / limit
+                logger.info('{:.2f}% processed.'.format(percents))
 
             except ValueError:
                 pass
 
             counter += 1
-        global done
-        print str(done) + '/' + str(counter) + ' emails found'
+        logger.info('{}/{} emails found'.format(done, counter))
+        logger.info('finished for {}'.format(timeit.default_timer() - start))
 
     else:
         logger.error('File doesn\'t exist.')
@@ -98,8 +102,8 @@ def main():
 
 
 def parse_domains(company_name):
-    print 'company: ' + company_name
-    if 'Freelance' in company_name or 'Google' in company_name or company_name == '':
+    logger.info('company: {}'.format(company_name))
+    if 'freelance' in company_name.lower() or 'google' in company_name.lower() or company_name == '' or company_name == '-':
         return ['gmail.com']
     domains = google_search(company_name)
     res_list = []
@@ -115,56 +119,51 @@ def parse_domains(company_name):
         if '\\' in domain:
             domain = domain[:domain.index('\\')]
 
-        res_list.append(domain)
-    res_list.append('gmail.com')
+        res_list += [domain]
+    res_list += ['gmail.com']
     return res_list
 
 
 def make_variations(fname, lname, domains):
-    print '-------- start making variations -------'
-    print domains
+    logger.info('-------- start making variations --------')
     try:
-        print 'zalupa'
         fchar = fname[0]
         lchar = lname[0]
     except IndexError:
-        print 'index error'
         return
-    a = []
+    emails = []
     try:
         for domain in domains:
-            a += ['{}@{}'.format(fname, domain)]
-            a += ['{}{}@{}'.format(fname, lname, domain)]
-            a += ['{}_{}@{}'.format(fname, lname, domain)]
-            a += ['{}.{}@{}'.format(fname, lname, domain)]
-            a += ['{}{}@{}'.format(fchar, lname, domain)]
-            a += ['{}_{}@{}'.format(fchar, lname, domain)]
-            a += ['{}.{}@{}'.format(fchar, lname, domain)]
-            a += ['{}{}@{}'.format(fname, lchar, domain)]
-            a += ['{}_{}@{}'.format(fname, lchar, domain)]
-            a += ['{}.{}@{}'.format(fname, lchar, domain)]
-            a += ['{}{}@{}'.format(fchar, lchar, domain)]
-            print a
+            emails += ['{}@{}'.format(fname, domain)]
+            emails += ['{}{}@{}'.format(fname, lname, domain)]
+            emails += ['{}_{}@{}'.format(fname, lname, domain)]
+            emails += ['{}.{}@{}'.format(fname, lname, domain)]
+            emails += ['{}{}@{}'.format(fchar, lname, domain)]
+            emails += ['{}_{}@{}'.format(fchar, lname, domain)]
+            emails += ['{}.{}@{}'.format(fchar, lname, domain)]
+            emails += ['{}{}@{}'.format(fname, lchar, domain)]
+            emails += ['{}_{}@{}'.format(fname, lchar, domain)]
+            emails += ['{}.{}@{}'.format(fname, lchar, domain)]
+            emails += ['{}{}@{}'.format(fchar, lchar, domain)]
     except UnicodeDecodeError:
-        print 'Name contains specific symbols'
+        logger.error('Name contains specific symbols')
         return
-    for x in a:
-        print x
-    print '--- end variations ---'
-    return a
+    logger.info('variations for {} {}'.format(fname, lname))
+    for email in emails:
+        logger.info(email)
+    logger.info('-------- end variations --------')
+    return emails
 
 
-def validate(possible_emails_list):
-    print '******validation started ******'
-    if possible_emails_list:
-        for x in possible_emails_list:
-            print x
-            if validate_email(x,verify=True):
-                global done
-                done += 1
-                print '******valid email: ' + x + '********'
-
-                return x
+def validate(emails):
+    logger.info('-------- validation started --------')
+    if emails:
+        for email in emails:
+            if validate_email(email, verify=True):
+                logger.info('*** valid email: {} ***'.format(email))
+                logger.info('-------- validation ended --------')
+                return email
+            logger.info('invalid email: {}'.format(email))
     return None
 
 
