@@ -2,6 +2,7 @@ import os
 import argparse
 import logging
 from validate_email import validate_email
+from urlparse import urlparse
 # from google import search as google_search
 import csv
 
@@ -12,6 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 
 def google_search(company_name):
+    print '-----starting search-------'
     driver = webdriver.Firefox()
     driver.get("http://www.google.com")
     input_element = driver.find_element_by_name("q")
@@ -25,14 +27,18 @@ def google_search(company_name):
         EC.visibility_of_element_located((By.XPATH, RESULTS_LOCATOR)))
 
         page1_results = driver.find_elements(By.XPATH, RESULTS_LOCATOR)
-
-        for item in page1_results:
-            return item.text
-        input_element.clear()
+        res_list = []
+        for item in page1_results[0:4]:
+            print 'url found ' + item.text
+            res_list.append(item.text)
+        driver.close()
+        return res_list
+        # input_element.clear()
     except common.exceptions.TimeoutException:
-        driver.quit()
+        driver.close()
         driver = webdriver.Firefox()
         driver.get("http://www.google.com")
+
 
 
 SUPPORTED_FILE_TYPES = ['.csv']
@@ -74,77 +80,89 @@ def main():
                 break
             try:
                 name, lastname = row[0].split(' ')
-                domain = parse_domain(row[1])
+                domain = parse_domains(row[1])
                 validate(make_variations(name, lastname, domain))
+                percents = (counter * 100) / 1000
+                print str(percents) + '% done'
+
             except ValueError:
                 pass
 
             counter += 1
-        print str(done)  +  '/' + str(counter) + ' emails found'
+        global done
+        print str(done) + '/' + str(counter) + ' emails found'
 
     else:
         logger.error('File doesn\'t exist.')
         return
 
 
-def parse_domain(company_name):
-    if 'freelance' in company_name or 'google' in company_name:
-        return 'gmail.com'
-    domain = list(google_search(company_name))[0]
-    if 'https://' in domain:
-        domain = domain[12:-1]
+def parse_domains(company_name):
+    print 'company: ' + company_name
+    if 'Freelance' in company_name or 'Google' in company_name or company_name == '':
+        return ['gmail.com']
+    domains = google_search(company_name)
+    res_list = []
+    for domain in domains:
+        if urlparse(domain)[1] == '':
+            domain = urlparse(domain)[2]
+        else:
+            domain = urlparse(domain)[1]
+        if 'www.' in domain:
+            domain = domain[4:]
         if '/' in domain:
-            return domain[:domain.index('/')]
-    domain = domain[11:-1]
-    if '/' in domain:
-        domain = domain[:domain.index('/')]
-    return domain
+            domain = domain[:domain.index('/')]
+        if '\\' in domain:
+            domain = domain[:domain.index('\\')]
+
+        res_list.append(domain)
+    res_list.append('gmail.com')
+    return res_list
 
 
-def make_variations(fname, lname, domain):
+def make_variations(fname, lname, domains):
+    print '-------- start making variations -------'
+    print domains
     try:
+        print 'zalupa'
         fchar = fname[0]
         lchar = lname[0]
     except IndexError:
+        print 'index error'
         return
+    a = []
     try:
-        a = [
-            fname + '@' + domain,
-            fname + lname + '@' + domain,
-            fname + '_' + lname + '@' + domain,
-            fname + '.' + lname + '@' + domain,
-            fchar + lname + '@' + domain,
-            fchar + '_' + lname + '@' + domain,
-            fchar + '.' + lname + '@' + domain,
-            fname + lchar + '@' + domain,
-            fname + '_' + lchar + '@' + domain,
-            fname + '.' + lchar + '@' + domain,
-            fchar + lchar + '@' + domain,
-            fname + '@gmail.com',
-            fname + lname + '@gmail.com',
-            fname + '_' + lname + '@gmail.com',
-            fname + '.' + lname + '@gmail.com',
-            fchar + lname + '@gmail.com',
-            fchar + '_' + lname + '@gmail.com',
-            fchar + '.' + lname + '@gmail.com',
-            fname + lchar + '@gmail.com',
-            fname + '_' + lchar + '@gmail.com',
-            fname + '.' + lchar + '@gmail.com',
-            fchar + lchar + '@gmail.com',
-            ]
+        for domain in domains:
+            a += ['{}@{}'.format(fname, domain)]
+            a += ['{}{}@{}'.format(fname, lname, domain)]
+            a += ['{}_{}@{}'.format(fname, lname, domain)]
+            a += ['{}.{}@{}'.format(fname, lname, domain)]
+            a += ['{}{}@{}'.format(fchar, lname, domain)]
+            a += ['{}_{}@{}'.format(fchar, lname, domain)]
+            a += ['{}.{}@{}'.format(fchar, lname, domain)]
+            a += ['{}{}@{}'.format(fname, lchar, domain)]
+            a += ['{}_{}@{}'.format(fname, lchar, domain)]
+            a += ['{}.{}@{}'.format(fname, lchar, domain)]
+            a += ['{}{}@{}'.format(fchar, lchar, domain)]
+            print a
     except UnicodeDecodeError:
+        print 'Name contains specific symbols'
         return
+    for x in a:
+        print x
+    print '--- end variations ---'
     return a
 
 
 def validate(possible_emails_list):
+    print '******validation started ******'
     if possible_emails_list:
         for x in possible_emails_list:
             print x
             if validate_email(x,verify=True):
                 global done
                 done += 1
-                print 'valid email: ' + x
+                print '******valid email: ' + x + '********'
 
                 return x
     return None
