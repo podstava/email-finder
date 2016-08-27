@@ -82,21 +82,31 @@ def main():
                 name, lastname = row[0].split(' ')
                 domain = parse_domains(row[1])
                 validate(make_variations(name, lastname, domain))
-                percents = (counter * 100) / 1000
-                print str(percents) + '% done'
+                global done
+                progress = str(counter) + '/' + str(1000) + ' parsed.\n  emails found: ' + str(done)
+                print progress
 
             except ValueError:
+                print 'name contains more than two words'
                 pass
 
             counter += 1
-        global done
-        print str(done) + '/' + str(counter) + ' emails found'
+        # global done
+        # print str(done) + '/' + str(counter) + ' emails found'
 
     else:
         logger.error('File doesn\'t exist.')
         return
 
-
+stop_domains = ['linkedin.com',
+                'twitter.com',
+                'facebook.com',
+                'vk.com',
+                'microsoft.com',
+                'wikipedia.com',
+                'tripadvisor.com',
+                'youtube.com',
+                'ru - ru.facebook.com']
 def parse_domains(company_name):
     print 'company: ' + company_name
     if 'Freelance' in company_name or 'Google' in company_name or company_name == '':
@@ -114,15 +124,13 @@ def parse_domains(company_name):
             domain = domain[:domain.index('/')]
         if '\\' in domain:
             domain = domain[:domain.index('\\')]
-
-        res_list.append(domain)
+        if domain not in stop_domains:
+            res_list.append(domain)
     res_list.append('gmail.com')
     return res_list
 
 
 def make_variations(fname, lname, domains):
-    print '-------- start making variations -------'
-    print domains
     try:
         print 'zalupa'
         fchar = fname[0]
@@ -144,13 +152,9 @@ def make_variations(fname, lname, domains):
             a += ['{}_{}@{}'.format(fname, lchar, domain)]
             a += ['{}.{}@{}'.format(fname, lchar, domain)]
             a += ['{}{}@{}'.format(fchar, lchar, domain)]
-            print a
     except UnicodeDecodeError:
         print 'Name contains specific symbols'
         return
-    for x in a:
-        print x
-    print '--- end variations ---'
     return a
 
 
