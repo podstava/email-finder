@@ -90,6 +90,7 @@ def main():
                 logger.info('{:.2f}% processed.'.format(percents))
 
             except ValueError:
+                logger.info('name contains more than two words')
                 pass
 
             counter += 1
@@ -100,7 +101,15 @@ def main():
         logger.error('File doesn\'t exist.')
         return
 
-
+stop_domains = ['linkedin.com',
+                'twitter.com',
+                'facebook.com',
+                'vk.com',
+                'microsoft.com',
+                'wikipedia.com',
+                'tripadvisor.com',
+                'youtube.com',
+                'ru - ru.facebook.com']
 def parse_domains(company_name):
     logger.info('company: {}'.format(company_name))
     if 'freelance' in company_name.lower() or 'google' in company_name.lower() or company_name == '' or company_name == '-':
@@ -118,8 +127,8 @@ def parse_domains(company_name):
             domain = domain[:domain.index('/')]
         if '\\' in domain:
             domain = domain[:domain.index('\\')]
-
-        res_list += [domain]
+        if domain not in stop_domains:
+            res_list += [domain]
     res_list += ['gmail.com']
     return res_list
 
@@ -130,6 +139,7 @@ def make_variations(fname, lname, domains):
         fchar = fname[0]
         lchar = lname[0]
     except IndexError:
+        logger.error('index error')
         return
     emails = []
     try:
