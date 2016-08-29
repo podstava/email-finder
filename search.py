@@ -51,10 +51,7 @@ def google_search(company_name):
         driver.close()
         return res_list
     except common.exceptions.TimeoutException:
-        logger.info('got timeout')
-        driver.close()
-        driver = webdriver.Firefox()
-        driver.get("http://www.google.com")
+        pass
 
 
 def csv_reader(file_path):
@@ -147,6 +144,9 @@ def handler_thread():
             row = q_initial.get(block=False)
             name, last_name = row[0].lower().split(' ')
             domain = parse_domains(row[1])
+            email = make_variations(name, last_name, domain)
+            if validate(email):
+                q_result.put(validate(email))
             # done += 1 if validate(make_variations(name, last_name, domain)) else 0
             # percents = (counter * 100) / limit
             # logger.info('{:.2f}% processed.'.format(percents))
@@ -160,7 +160,7 @@ def writer_thread():
     """Write output to file here."""
     while True:
         try:
-            print q_result.get()
+            print 'VALID_EMAIL ' + str(q_result.get())
         except Queue.Empty:
             break
 
@@ -191,4 +191,4 @@ def threads_start(file_reader, csv_file, threads_count):
 
 
 if __name__ == '__main__':
-    threads_start(csv_reader, FILE, 8)
+    threads_start(csv_reader, FILE, 4)
