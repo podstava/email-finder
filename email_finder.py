@@ -94,7 +94,7 @@ def main():
                 name, lastname = row[0].lower().split(' ')
                 domain = parse_domains(row[1])
                 done += 1 if validate(make_variations(name, lastname, domain)) else 0
-                percents = (counter * 100) / limit
+                percents = (counter * 100.0) / limit
                 logger.info('{:.2f}% processed.'.format(percents))
 
             except ValueError:
@@ -158,7 +158,7 @@ def parse_domains(company_name):
             domain = domain[:domain.index('/')]
         if '\\' in domain:
             domain = domain[:domain.index('\\')]
-        if domain not in stop_domains:
+        if domain not in stop_domains and domain not in res_list:
             res_list += [domain]
     res_list += ['gmail.com']
     return res_list
