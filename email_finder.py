@@ -1,17 +1,25 @@
 import os
 import argparse
 import logging
+import csv
 
 import timeit
 from validate_email import validate_email
 from urlparse import urlparse
-# from google import search as google_search
-import csv
+import DNS
+from DNS.Base import TimeoutError
 
 from selenium import webdriver, common
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+
+DNS.defaults['server'].append('208.67.222.222')
+DNS.defaults['server'].append('208.67.222.220')
+DNS.defaults['server'].append('8.8.8.8 ')
+
+DNS.defaults['timeout'] = 1
 
 
 logger = logging.getLogger(__name__)
@@ -62,6 +70,7 @@ def csv_reader(filepath):
 
 
 def main():
+    file = open('lol.txt', 'a')
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--file', help='Path to data.', required=True)
     args = parser.parse_args()
@@ -77,7 +86,7 @@ def main():
 
         counter = 0
         done = 0
-        limit = 100
+        limit = 1000
         start = timeit.default_timer()
         for row in csv_reader(args.file):
             if counter == limit:
@@ -85,10 +94,11 @@ def main():
             try:
                 name, lastname = row[0].lower().split(' ')
                 domain = parse_domains(row[1])
-                done += 1 if validate(make_variations(name, lastname, domain)) else 0
+                valid_email = validate(make_variations(name, lastname, domain))
+                done += 1 if valid_email else 0
                 percents = (counter * 100) / limit
                 logger.info('{:.2f}% processed.'.format(percents))
-
+                file.write('{} {}  email: {}\n'.format(name, lastname, valid_email))
             except ValueError:
                 logger.info('name contains more than two words')
                 pass
@@ -100,16 +110,42 @@ def main():
     else:
         logger.error('File doesn\'t exist.')
         return
+    file.close()
 
 stop_domains = ['linkedin.com',
                 'twitter.com',
                 'facebook.com',
                 'vk.com',
                 'microsoft.com',
-                'wikipedia.com',
+                'microsoftstore.com'
+                'en.wikipedia.org',
+                'uk.wikipedia.org',
+                'ru.wikipedia.org',
+                'pt.wikipedia.org',
+                'de.wikipedia.org'
+                'wikipedia.org',
                 'tripadvisor.com',
                 'youtube.com',
-                'ru - ru.facebook.com']
+                'amazon.com',
+                'jobs.dou.ua',
+                'uk-ua.facebook.com',
+                'ru-ru.facebook.com',
+                'en-gb.facebook.com',
+                'es-es.facebook.com',
+                'es-la.facebook.com',
+                'ain.ua',
+                'twich.tv',
+                'play.google.com',
+                'itunes.apple.com',
+                'sourceforge.net',
+                'INTERNETUA',
+                'FINANCE.UA',
+                'crunchbase.com',
+                'hotline.ua',
+                'stackoverflow.com'
+                ]
+
+
 def parse_domains(company_name):
     logger.info('company: {}'.format(company_name))
     if 'freelance' in company_name.lower() or 'google' in company_name.lower() or company_name == '' or company_name == '-':
@@ -127,15 +163,18 @@ def parse_domains(company_name):
             domain = domain[:domain.index('/')]
         if '\\' in domain:
             domain = domain[:domain.index('\\')]
-        if domain not in stop_domains:
+        if domain not in stop_domains and domain not in res_list:
             res_list += [domain]
+
     res_list += ['gmail.com']
     return res_list
 
 
 def make_variations(fname, lname, domains):
     logger.info('-------- start making variations --------')
+    logger.info(domains)
     try:
+        print 'zalupa'
         fchar = fname[0]
         lchar = lname[0]
     except IndexError:
@@ -168,12 +207,15 @@ def make_variations(fname, lname, domains):
 def validate(emails):
     logger.info('-------- validation started --------')
     if emails:
-        for email in emails:
-            if validate_email(email, verify=True):
-                logger.info('*** valid email: {} ***'.format(email))
-                logger.info('-------- validation ended --------')
-                return email
-            logger.info('invalid email: {}'.format(email))
+        try:
+            for email in emails:
+                if validate_email(email, verify=True):
+                    logger.info('*** valid email: {} ***'.format(email))
+                    logger.info('-------- validation ended --------')
+                    return email
+                logger.info('invalid email: {}'.format(email))
+        except TimeoutError:
+            logger.info('Timeout error ')
     return None
 
 
