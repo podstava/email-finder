@@ -5,13 +5,21 @@ import logging
 import timeit
 from validate_email import validate_email
 from urlparse import urlparse
-# from google import search as google_search
+import DNS
+from DNS.Base import TimeoutError
+
 import csv
 
 from selenium import webdriver, common
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+DNS.defaults['server'].append('208.67.222.222')
+DNS.defaults['server'].append('208.67.222.220')
+DNS.defaults['server'].append('8.8.8.8 ')
+
+DNS.defaults['timeout'] = 1
 
 
 logger = logging.getLogger(__name__)
@@ -102,14 +110,37 @@ def main():
         return
 
 stop_domains = ['linkedin.com',
-                'twitter.com',
-                'facebook.com',
-                'vk.com',
-                'microsoft.com',
-                'wikipedia.com',
-                'tripadvisor.com',
-                'youtube.com',
-                'ru - ru.facebook.com']
+               'twitter.com',
+               'facebook.com',
+               'vk.com',
+               'microsoft.com',
+               'microsoftstore.com'
+               'en.wikipedia.org',
+               'uk.wikipedia.org',
+               'ru.wikipedia.org',
+               'pt.wikipedia.org',
+               'de.wikipedia.org'
+               'wikipedia.org',
+               'tripadvisor.com',
+               'youtube.com',
+               'amazon.com',
+               'jobs.dou.ua',
+               'uk-ua.facebook.com',
+               'ru-ru.facebook.com',
+               'en-gb.facebook.com',
+               'es-es.facebook.com',
+               'es-la.facebook.com',
+               'ain.ua',
+               'twich.tv',
+               'play.google.com',
+               'itunes.apple.com',
+               'sourceforge.net',
+               'INTERNETUA',
+               'FINANCE.UA',
+               'crunchbase.com',
+               'hotline.ua',
+               'stackoverflow.com'
+               ]
 def parse_domains(company_name):
     logger.info('company: {}'.format(company_name))
     if 'freelance' in company_name.lower() or 'google' in company_name.lower() or company_name == '' or company_name == '-':
@@ -148,6 +179,9 @@ def make_variations(fname, lname, domains):
             emails += ['{}{}@{}'.format(fname, lname, domain)]
             emails += ['{}_{}@{}'.format(fname, lname, domain)]
             emails += ['{}.{}@{}'.format(fname, lname, domain)]
+            emails += ['{}{}@{}'.format(lname, fname, domain)]
+            emails += ['{}_{}@{}'.format(lname, fname, domain)]
+            emails += ['{}.{}@{}'.format(lname, fname, domain)]
             emails += ['{}{}@{}'.format(fchar, lname, domain)]
             emails += ['{}_{}@{}'.format(fchar, lname, domain)]
             emails += ['{}.{}@{}'.format(fchar, lname, domain)]
@@ -155,6 +189,14 @@ def make_variations(fname, lname, domains):
             emails += ['{}_{}@{}'.format(fname, lchar, domain)]
             emails += ['{}.{}@{}'.format(fname, lchar, domain)]
             emails += ['{}{}@{}'.format(fchar, lchar, domain)]
+            emails += ['{}{}@{}'.format(lchar, fname, domain)]
+            emails += ['{}_{}@{}'.format(lchar, fname, domain)]
+            emails += ['{}.{}@{}'.format(lchar, fname, domain)]
+            emails += ['{}{}@{}'.format(lname, fchar, domain)]
+            emails += ['{}_{}@{}'.format(lname, fchar, domain)]
+            emails += ['{}.{}@{}'.format(lname, fchar, domain)]
+            emails += ['{}{}@{}'.format(lchar, fchar, domain)]
+            emails += ['{}@{}'.format(lname, domain)]
     except UnicodeDecodeError:
         logger.error('Name contains specific symbols')
         return
@@ -168,12 +210,15 @@ def make_variations(fname, lname, domains):
 def validate(emails):
     logger.info('-------- validation started --------')
     if emails:
-        for email in emails:
-            if validate_email(email, verify=True):
-                logger.info('*** valid email: {} ***'.format(email))
-                logger.info('-------- validation ended --------')
-                return email
-            logger.info('invalid email: {}'.format(email))
+        try:
+            for email in emails:
+                if validate_email(email, verify=True):
+                    logger.info('*** valid email: {} ***'.format(email))
+                    logger.info('-------- validation ended --------')
+                    return email
+                logger.info('invalid email: {}'.format(email))
+        except TimeoutError:
+           logger.info('-------- Timeout error --------')
     return None
 
 
