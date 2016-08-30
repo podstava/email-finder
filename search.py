@@ -94,32 +94,43 @@ def parse_domains(company_name):
     return res_list
 
 
-def make_variations(first_name, last_name, domains):
+def make_variations(fname, lname, domains):
     logger.info('-------- start making variations --------')
     try:
-        first_char = first_name[0]
-        last_char = last_name[0]
+        fchar = fname[0]
+        lchar = lname[0]
     except IndexError:
         logger.error('index error')
         return
     emails = []
     try:
         for domain in domains:
-            emails += ['{}@{}'.format(first_name, domain)]
-            emails += ['{}{}@{}'.format(first_name, last_name, domain)]
-            emails += ['{}_{}@{}'.format(first_name, last_name, domain)]
-            emails += ['{}.{}@{}'.format(first_name, last_name, domain)]
-            emails += ['{}{}@{}'.format(first_char, last_name, domain)]
-            emails += ['{}_{}@{}'.format(first_char, last_name, domain)]
-            emails += ['{}.{}@{}'.format(first_char, last_name, domain)]
-            emails += ['{}{}@{}'.format(first_name, last_char, domain)]
-            emails += ['{}_{}@{}'.format(first_name, last_char, domain)]
-            emails += ['{}.{}@{}'.format(first_name, last_char, domain)]
-            emails += ['{}{}@{}'.format(first_char, last_char, domain)]
+            emails += ['{}@{}'.format(fname, domain)]
+            emails += ['{}{}@{}'.format(fname, lname, domain)]
+            emails += ['{}_{}@{}'.format(fname, lname, domain)]
+            emails += ['{}.{}@{}'.format(fname, lname, domain)]
+            emails += ['{}{}@{}'.format(lname, fname, domain)]
+            emails += ['{}_{}@{}'.format(lname, fname, domain)]
+            emails += ['{}.{}@{}'.format(lname, fname, domain)]
+            emails += ['{}{}@{}'.format(fchar, lname, domain)]
+            emails += ['{}_{}@{}'.format(fchar, lname, domain)]
+            emails += ['{}.{}@{}'.format(fchar, lname, domain)]
+            emails += ['{}{}@{}'.format(fname, lchar, domain)]
+            emails += ['{}_{}@{}'.format(fname, lchar, domain)]
+            emails += ['{}.{}@{}'.format(fname, lchar, domain)]
+            emails += ['{}{}@{}'.format(fchar, lchar, domain)]
+            emails += ['{}{}@{}'.format(lchar, fname, domain)]
+            emails += ['{}_{}@{}'.format(lchar, fname, domain)]
+            emails += ['{}.{}@{}'.format(lchar, fname, domain)]
+            emails += ['{}{}@{}'.format(lname, fchar, domain)]
+            emails += ['{}_{}@{}'.format(lname, fchar, domain)]
+            emails += ['{}.{}@{}'.format(lname, fchar, domain)]
+            emails += ['{}{}@{}'.format(lchar, fchar, domain)]
+            emails += ['{}@{}'.format(lname, domain)]
     except UnicodeDecodeError:
         logger.error('Name contains specific symbols')
         return
-    logger.info('variations for {} {}'.format(first_name, last_name))
+    logger.info('variations for {} {}'.format(fname, lname))
     for email in emails:
         logger.info(email)
     logger.info('-------- end variations --------')
