@@ -46,7 +46,7 @@ def google_search(company_name):
 
         page1_results = driver.find_elements(By.XPATH, result_location)
         res_list = []
-        for item in page1_results[0:4]:
+        for item in page1_results:
             logger.info('url found {}'.format(item.text))
             res_list += [item.text]
         driver.close()
@@ -64,42 +64,50 @@ def csv_reader(file_path):
             yield row
 
 
-def parse_domains(company_name):
-    stop_domains = ['linkedin.com',
-                    'twitter.com',
-                    'facebook.com',
-                    'vk.com',
-                    'microsoft.com',
-                    'microsoftstore.com'
-                    'en.wikipedia.org',
-                    'uk.wikipedia.org',
-                    'ru.wikipedia.org',
-                    'pt.wikipedia.org',
-                    'de.wikipedia.org'
-                    'wikipedia.org',
-                    'tripadvisor.com',
-                    'youtube.com',
-                    'amazon.com',
-                    'jobs.dou.ua',
-                    'uk-ua.facebook.com',
-                    'ru-ru.facebook.com',
-                    'en-gb.facebook.com',
-                    'es-es.facebook.com',
-                    'es-la.facebook.com',
-                    'ain.ua',
-                    'twich.tv',
-                    'play.google.com',
-                    'itunes.apple.com',
-                    'sourceforge.net',
-                    'INTERNETUA',
-                    'FINANCE.UA',
-                    'crunchbase.com',
-                    'hotline.ua',
-                    'stackoverflow.com',
-                    'booking.com',
-                    'wix.com'
-                    ]
+stop_domains = ['linkedin.com',
+                'twitter.com',
+                'facebook.com',
+                'vk.com',
+                'microsoft.com',
+                'microsoftstore.com',
+                'wikipedia.org',
+                'en.wikipedia.org',
+                'uk.wikipedia.org',
+                'ru.wikipedia.org',
+                'pt.wikipedia.org',
+                'de.wikipedia.org'
+                'wikipedia.org',
+                'tripadvisor.com',
+                'youtube.com',
+                'amazon.com',
+                'jobs.dou.ua',
+                'uk-ua.facebook.com',
+                'ru-ru.facebook.com',
+                'en-gb.facebook.com',
+                'es-es.facebook.com',
+                'es-la.facebook.com',
+                'ain.ua',
+                'twich.tv',
+                'play.google.com',
+                'itunes.apple.com',
+                'sourceforge.net',
+                'INTERNETUA',
+                'FINANCE.UA',
+                'crunchbase.com',
+                'hotline.ua',
+                'stackoverflow.com',
+                'booking.com',
+                'wix.com',
+                'dictionary.com',
+                'fortune.com',
+                'prom.ua',
+                'chrome.google.com'
+                'bloomberg.com',
 
+                ]
+
+
+def parse_domains(company_name):
     logger.info('company: {}'.format(company_name))
     if 'freelance' in company_name.lower() \
                     or 'google' in company_name.lower() \
