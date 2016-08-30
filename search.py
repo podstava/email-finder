@@ -45,16 +45,16 @@ def google_search(company_name):
             EC.visibility_of_element_located((By.XPATH, result_location)))
 
         page1_results = driver.find_elements(By.XPATH, result_location)
-        driver.quit()
         res_list = []
         for item in page1_results[0:4]:
             logger.info('url found {}'.format(item.text))
             res_list += [item.text]
-
+        driver.close()
         return res_list
     except common.exceptions.TimeoutException:
-        driver.quit()
+        driver.close()
         pass
+    driver.close()
 
 
 def csv_reader(file_path):
@@ -70,10 +70,34 @@ def parse_domains(company_name):
                     'facebook.com',
                     'vk.com',
                     'microsoft.com',
-                    'wikipedia.com',
+                    'microsoftstore.com'
+                    'en.wikipedia.org',
+                    'uk.wikipedia.org',
+                    'ru.wikipedia.org',
+                    'pt.wikipedia.org',
+                    'de.wikipedia.org'
+                    'wikipedia.org',
                     'tripadvisor.com',
                     'youtube.com',
-                    'ru - ru.facebook.com']
+                    'amazon.com',
+                    'jobs.dou.ua',
+                    'uk-ua.facebook.com',
+                    'ru-ru.facebook.com',
+                    'en-gb.facebook.com',
+                    'es-es.facebook.com',
+                    'es-la.facebook.com',
+                    'ain.ua',
+                    'twich.tv',
+                    'play.google.com',
+                    'itunes.apple.com',
+                    'sourceforge.net',
+                    'INTERNETUA',
+                    'FINANCE.UA',
+                    'crunchbase.com',
+                    'hotline.ua',
+                    'stackoverflow.com',
+                    'booking.com'
+                    ]
 
     logger.info('company: {}'.format(company_name))
     if 'freelance' in company_name.lower() \
@@ -208,5 +232,5 @@ def threads_start(file_reader, csv_file, threads_count):
 
 if __name__ == '__main__':
     start = timeit.default_timer()
-    threads_start(csv_reader, FILE, 4)
+    threads_start(csv_reader, FILE, 3)
     print 'finished for {}'.format(timeit.default_timer() - start)
