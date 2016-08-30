@@ -7,6 +7,7 @@ from urlparse import urlparse
 import csv
 
 from validate_email import validate_email
+import itertools
 
 from selenium import webdriver, common
 from selenium.webdriver.common.by import By
@@ -18,7 +19,7 @@ from Queue import Queue as Q
 import Queue
 
 
-FILE = '/home/vs/Downloads/attendees.csv'
+FILE = 'attendees.csv'
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -44,13 +45,15 @@ def google_search(company_name):
             EC.visibility_of_element_located((By.XPATH, result_location)))
 
         page1_results = driver.find_elements(By.XPATH, result_location)
+        driver.quit()
         res_list = []
         for item in page1_results[0:4]:
             logger.info('url found {}'.format(item.text))
             res_list += [item.text]
-        driver.close()
+
         return res_list
     except common.exceptions.TimeoutException:
+        driver.quit()
         pass
 
 
@@ -73,7 +76,10 @@ def parse_domains(company_name):
                     'ru - ru.facebook.com']
 
     logger.info('company: {}'.format(company_name))
-    if 'freelance' in company_name.lower() or 'google' in company_name.lower() or company_name == '' or company_name == '-':
+    if 'freelance' in company_name.lower() \
+                    or 'google' in company_name.lower() \
+                    or company_name == ''\
+                    or company_name == '-':
         return ['gmail.com']
     domains = google_search(company_name)
     res_list = []
@@ -90,47 +96,35 @@ def parse_domains(company_name):
             domain = domain[:domain.index('\\')]
         if domain not in stop_domains:
             res_list += [domain]
-    res_list += ['gmail.com']
     return res_list
 
 
-def make_variations(fname, lname, domains):
+def make_variations(name_list, domains):
     logger.info('-------- start making variations --------')
-    try:
-        fchar = fname[0]
-        lchar = lname[0]
-    except IndexError:
-        logger.error('index error')
+    if not domains:
         return
+    names = []
+    parsed_names = []
     emails = []
     try:
+        for L in range(0, len(name_list) + 1):
+            for subset in itertools.combinations(name_list, L):
+                names += [subset]
+        for x in names:
+            if x == () or x == ('',):
+                continue
+            parsed_names += ['_'.join(x).lower()]
+            if ''.join(x).lower() in parsed_names:
+                continue
+            parsed_names += [''.join(x).lower()]
+            parsed_names += ['.'.join(x).lower()]
+
         for domain in domains:
-            emails += ['{}@{}'.format(fname, domain)]
-            emails += ['{}{}@{}'.format(fname, lname, domain)]
-            emails += ['{}_{}@{}'.format(fname, lname, domain)]
-            emails += ['{}.{}@{}'.format(fname, lname, domain)]
-            emails += ['{}{}@{}'.format(lname, fname, domain)]
-            emails += ['{}_{}@{}'.format(lname, fname, domain)]
-            emails += ['{}.{}@{}'.format(lname, fname, domain)]
-            emails += ['{}{}@{}'.format(fchar, lname, domain)]
-            emails += ['{}_{}@{}'.format(fchar, lname, domain)]
-            emails += ['{}.{}@{}'.format(fchar, lname, domain)]
-            emails += ['{}{}@{}'.format(fname, lchar, domain)]
-            emails += ['{}_{}@{}'.format(fname, lchar, domain)]
-            emails += ['{}.{}@{}'.format(fname, lchar, domain)]
-            emails += ['{}{}@{}'.format(fchar, lchar, domain)]
-            emails += ['{}{}@{}'.format(lchar, fname, domain)]
-            emails += ['{}_{}@{}'.format(lchar, fname, domain)]
-            emails += ['{}.{}@{}'.format(lchar, fname, domain)]
-            emails += ['{}{}@{}'.format(lname, fchar, domain)]
-            emails += ['{}_{}@{}'.format(lname, fchar, domain)]
-            emails += ['{}.{}@{}'.format(lname, fchar, domain)]
-            emails += ['{}{}@{}'.format(lchar, fchar, domain)]
-            emails += ['{}@{}'.format(lname, domain)]
+            for res in parsed_names:
+                emails += [res + '@' + domain]
     except UnicodeDecodeError:
         logger.error('Name contains specific symbols')
         return
-    logger.info('variations for {} {}'.format(fname, lname))
     for email in emails:
         logger.info(email)
     logger.info('-------- end variations --------')
@@ -153,9 +147,9 @@ def handler_thread():
     while True:
         try:
             row = q_initial.get(block=False)
-            name, last_name = row[0].lower().split(' ')
+            name_list = list(row[0].lower().split(' '))
             domain = parse_domains(row[1])
-            email = make_variations(name, last_name, domain)
+            email = make_variations(name_list, domain)
             if validate(email):
                 q_result.put(validate(email))
             # done += 1 if validate(make_variations(name, last_name, domain)) else 0
@@ -183,11 +177,12 @@ q_result = Q()
 
 def threads_start(file_reader, csv_file, threads_count):
     counter = 0
-    end = 1100
-    start = 1000
+    end = 2000
+    start = 1100
     for row in file_reader(csv_file):
-        # if counter < start:
-            # continue
+        if counter < start:
+            counter += 1
+            continue
         if counter == end:
             break
         q_initial.put(row)
@@ -212,4 +207,6 @@ def threads_start(file_reader, csv_file, threads_count):
 
 
 if __name__ == '__main__':
+    start = timeit.default_timer()
     threads_start(csv_reader, FILE, 4)
+    print 'finished for {}'.format(timeit.default_timer() - start)
