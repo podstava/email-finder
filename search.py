@@ -96,7 +96,8 @@ def parse_domains(company_name):
                     'crunchbase.com',
                     'hotline.ua',
                     'stackoverflow.com',
-                    'booking.com'
+                    'booking.com',
+                    'wix.com'
                     ]
 
     logger.info('company: {}'.format(company_name))
@@ -175,7 +176,7 @@ def handler_thread():
             domain = parse_domains(row[1])
             email = make_variations(name_list, domain)
             if validate(email):
-                q_result.put(validate(email))
+                q_result.put((row[0], validate(email)))
             # done += 1 if validate(make_variations(name, last_name, domain)) else 0
             # percents = (counter * 100) / limit
             # logger.info('{:.2f}% processed.'.format(percents))
