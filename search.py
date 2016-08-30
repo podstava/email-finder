@@ -160,9 +160,8 @@ def writer_thread():
     """Write output to file here."""
     while True:
         try:
-            # print 'VALID_EMAIL ' + str(q_result.get())
-            with open("result_emails.txt", "a") as my_file:
-                my_file.write(str(q_result.get()) + '\n')
+            with open('results.txt', 'a') as result_file:
+            result_file.write(str(q_result.get()) + '\n')
         except Queue.Empty:
             break
 
@@ -197,6 +196,7 @@ def threads_start(file_reader, csv_file, threads_count):
 
     for t in threads:
         t.join()
+
         print threads
 
 
