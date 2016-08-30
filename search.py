@@ -161,7 +161,7 @@ def writer_thread():
     while True:
         try:
             with open('results.txt', 'a') as result_file:
-            result_file.write(str(q_result.get()) + '\n')
+                result_file.write(str(q_result.get()) + '\n')
         except Queue.Empty:
             break
 
