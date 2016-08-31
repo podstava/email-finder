@@ -3,6 +3,7 @@ import logging
 
 import timeit
 from urlparse import urlparse
+from stop_domains import stop_domains
 
 import csv
 
@@ -64,55 +65,10 @@ def csv_reader(file_path):
             yield row
 
 
-stop_domains = ['linkedin.com',
-                'twitter.com',
-                'facebook.com',
-                'vk.com',
-                'microsoft.com',
-                'microsoftstore.com',
-                'wikipedia.org',
-                'en.wikipedia.org',
-                'uk.wikipedia.org',
-                'ru.wikipedia.org',
-                'pt.wikipedia.org',
-                'de.wikipedia.org'
-                'wikipedia.org',
-                'tripadvisor.com',
-                'youtube.com',
-                'amazon.com',
-                'jobs.dou.ua',
-                'uk-ua.facebook.com',
-                'ru-ru.facebook.com',
-                'en-gb.facebook.com',
-                'es-es.facebook.com',
-                'es-la.facebook.com',
-                'ain.ua',
-                'twich.tv',
-                'play.google.com',
-                'itunes.apple.com',
-                'sourceforge.net',
-                'INTERNETUA',
-                'FINANCE.UA',
-                'crunchbase.com',
-                'hotline.ua',
-                'stackoverflow.com',
-                'booking.com',
-                'wix.com',
-                'dictionary.com',
-                'fortune.com',
-                'prom.ua',
-                'chrome.google.com'
-                'bloomberg.com',
-
-                ]
-
-
 def parse_domains(company_name):
     logger.info('company: {}'.format(company_name))
     if 'freelance' in company_name.lower() \
-                    or 'google' in company_name.lower() \
-                    or company_name == ''\
-                    or company_name == '-':
+            or 'google' in company_name.lower() or company_name == '' or company_name == '-':
         return ['gmail.com']
     domains = google_search(company_name)
     res_list = []
@@ -179,6 +135,7 @@ def validate(emails):
 def handler_thread():
     while True:
         try:
+            # todo: try with block=True
             row = q_initial.get(block=False)
             name_list = list(row[0].lower().split(' '))
             domain = parse_domains(row[1])
@@ -211,7 +168,7 @@ q_result = Q()
 def threads_start(file_reader, csv_file, threads_count):
     counter = 0
     end = 2000
-    start = 1100
+    start = 1696
     for row in file_reader(csv_file):
         if counter < start:
             counter += 1
@@ -241,5 +198,5 @@ def threads_start(file_reader, csv_file, threads_count):
 
 if __name__ == '__main__':
     start = timeit.default_timer()
-    threads_start(csv_reader, FILE, 3)
+    threads_start(csv_reader, FILE, 6)
     print 'finished for {}'.format(timeit.default_timer() - start)
