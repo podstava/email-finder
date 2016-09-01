@@ -1,4 +1,3 @@
-import os
 import logging
 
 import timeit
@@ -19,6 +18,9 @@ from threading import Thread
 from Queue import Queue as Q
 import Queue
 
+import DNS
+from DNS.Base import TimeoutError
+
 
 FILE = 'attendees.csv'
 
@@ -30,10 +32,16 @@ formatter = logging.Formatter('[%(levelname)s] - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
+DNS.defaults['server'].append('208.67.222.222')
+DNS.defaults['server'].append('208.67.222.220')
+DNS.defaults['server'].append('8.8.8.8 ')
+
+DNS.defaults['timeout'] = 1
+
 
 def google_search(company_name):
     logger.info('starting search for domain of {}'.format(company_name))
-    driver = webdriver.Firefox()
+    driver = webdriver.Chrome('/Users/Pro/Downloads/chromedriver')
     driver.get("http://www.google.com")
     input_element = driver.find_element_by_name("q")
     try:
@@ -42,20 +50,19 @@ def google_search(company_name):
 
         result_location = "//div/cite"
 
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.XPATH, result_location)))
-
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, result_location)))
         page1_results = driver.find_elements(By.XPATH, result_location)
         res_list = []
         for item in page1_results:
             logger.info('url found {}'.format(item.text))
             res_list += [item.text]
-        driver.close()
+        driver.quit()
         return res_list
     except common.exceptions.TimeoutException:
-        driver.close()
+        driver.quit()
         pass
-    driver.close()
+    driver.quit()
 
 
 def csv_reader(file_path):
@@ -72,6 +79,8 @@ def parse_domains(company_name):
         return ['gmail.com']
     domains = google_search(company_name)
     res_list = []
+    if not domains:
+        return ['gmail.com']
     for domain in domains:
         if urlparse(domain)[1] == '':
             domain = urlparse(domain)[2]
@@ -124,29 +133,35 @@ def validate(emails):
     logger.info('-------- validation started --------')
     if emails:
         for email in emails:
-            if validate_email(email, verify=True):
-                logger.info('*** valid email: {} ***'.format(email))
-                logger.info('-------- validation ended --------')
-                return email
-            logger.info('invalid email: {}'.format(email))
+            try:
+                if validate_email(email, verify=True):
+                    logger.info('*** valid email: {} ***'.format(email))
+                    logger.info('-------- validation ended --------')
+                    return email
+                logger.info('invalid email: {}'.format(email))
+            except TimeoutError:
+                logger.info('TIMEOUT BITCH')
     return None
+
+done = 0
+start_time = timeit.default_timer()
 
 
 def handler_thread():
     while True:
         try:
-            # todo: try with block=True
-            row = q_initial.get(block=False)
+            # todo: try with block=True and timeout
+            row = q_initial.get(block=True, timeout=10)
             name_list = list(row[0].lower().split(' '))
             domain = parse_domains(row[1])
             email = make_variations(name_list, domain)
+            global done
             if validate(email):
                 q_result.put((row[0], validate(email)))
-            # done += 1 if validate(make_variations(name, last_name, domain)) else 0
-            # percents = (counter * 100) / limit
-            # logger.info('{:.2f}% processed.'.format(percents))
+                done += 1
+                logger.info('######## VALID EMAILS FOUND: {}'.format(done))
         except Queue.Empty:
-            break
+            print 'finished for {}'.format(timeit.default_timer() - start_time)
         except ValueError:
             logger.info('name contains more than two words')
 
@@ -167,8 +182,8 @@ q_result = Q()
 
 def threads_start(file_reader, csv_file, threads_count):
     counter = 0
-    end = 2000
-    start = 1696
+    end = 3000
+    start = 2400
     for row in file_reader(csv_file):
         if counter < start:
             counter += 1
@@ -176,7 +191,6 @@ def threads_start(file_reader, csv_file, threads_count):
         if counter == end:
             break
         q_initial.put(row)
-        print counter
         counter += 1
 
     threads = []
@@ -197,6 +211,5 @@ def threads_start(file_reader, csv_file, threads_count):
 
 
 if __name__ == '__main__':
-    start = timeit.default_timer()
     threads_start(csv_reader, FILE, 6)
-    print 'finished for {}'.format(timeit.default_timer() - start)
+
