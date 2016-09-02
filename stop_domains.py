@@ -1,5 +1,6 @@
 stop_domains = ['linkedin.com',
                 'uk.linkedin.com',
+                'ng.linkedin.com'
                 'twitter.com',
                 'facebook.com',
                 'vk.com',
@@ -70,5 +71,15 @@ stop_domains = ['linkedin.com',
                 'soundcloud.com',
                 'forbes.com',
                 'britishcouncil.org.ua',
-                'rabota.ua'
+                'rabota.ua',
+                'babla.ru',
+                'magnetix.com.ua',
+                'oxforddictionaries.com',
+                'vedomosti.ru',
+                'ok.ru',
+                'clipsland.biz',
+                'olx.ua',
+                'olx.pl',
+                'slideshare.net'
+
 ]

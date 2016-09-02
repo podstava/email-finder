@@ -1,23 +1,18 @@
 import logging
-
 import timeit
+import time
 from urlparse import urlparse
 from stop_domains import stop_domains
-
 import csv
-
 from validate_email import validate_email
 import itertools
-
 from selenium import webdriver, common
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
 from threading import Thread
 from Queue import Queue as Q
 import Queue
-
 import DNS
 from DNS.Base import TimeoutError
 
@@ -41,13 +36,13 @@ DNS.defaults['timeout'] = 1
 
 def google_search(company_name):
     logger.info('starting search for domain of {}'.format(company_name))
-    driver = webdriver.Chrome('/Users/Pro/Downloads/chromedriver')
+    driver = webdriver.Firefox()
     driver.get("http://www.google.com")
     input_element = driver.find_element_by_name("q")
     try:
+        company_name = unicode(company_name, errors='replace')
         input_element.send_keys(company_name)
         input_element.submit()
-
         result_location = "//div/cite"
 
         WebDriverWait(driver, 20).until(
@@ -55,14 +50,15 @@ def google_search(company_name):
         page1_results = driver.find_elements(By.XPATH, result_location)
         res_list = []
         for item in page1_results:
-            logger.info('url found {}'.format(item.text))
-            res_list += [item.text]
+            text = item.text.encode('utf8')
+            logger.info('url found {}'.format(text))
+            res_list += [text]
+
         driver.quit()
         return res_list
     except common.exceptions.TimeoutException:
+        print 'zalupa'
         driver.quit()
-        pass
-    driver.quit()
 
 
 def csv_reader(file_path):
@@ -75,7 +71,8 @@ def csv_reader(file_path):
 def parse_domains(company_name):
     logger.info('company: {}'.format(company_name))
     if 'freelance' in company_name.lower() \
-            or 'google' in company_name.lower() or company_name == '' or company_name == '-':
+            or 'google' in company_name.lower() \
+            or 'student' in company_name.lower() or company_name == '' or company_name == '-':
         return ['gmail.com']
     domains = google_search(company_name)
     res_list = []
@@ -150,20 +147,24 @@ start_time = timeit.default_timer()
 def handler_thread():
     while True:
         try:
-            # todo: try with block=True and timeout
             row = q_initial.get(block=True, timeout=10)
             name_list = list(row[0].lower().split(' '))
             domain = parse_domains(row[1])
-            email = make_variations(name_list, domain)
+            emails = make_variations(name_list, domain)
             global done
-            if validate(email):
-                q_result.put((row[0], validate(email)))
+            valid = validate(emails)
+            if valid:
+                q_result.put((row[0], valid))
                 done += 1
                 logger.info('######## VALID EMAILS FOUND: {}'.format(done))
+                try:
+                    with open('results.txt', 'a') as result_file:
+                        result_file.write(str(q_result.get()) + '\n')
+                except Queue.Empty:
+                    print 'NOTHING TO WRITE BEACH'
+                    pass
         except Queue.Empty:
             print 'finished for {}'.format(timeit.default_timer() - start_time)
-        except ValueError:
-            logger.info('name contains more than two words')
 
 
 def writer_thread():
@@ -173,6 +174,7 @@ def writer_thread():
             with open('results.txt', 'a') as result_file:
                 result_file.write(str(q_result.get()) + '\n')
         except Queue.Empty:
+            print 'NOTHING TO WRITE BEACH'
             break
 
 
@@ -182,8 +184,8 @@ q_result = Q()
 
 def threads_start(file_reader, csv_file, threads_count):
     counter = 0
-    end = 3000
-    start = 2400
+    end = 4000
+    start = 3
     for row in file_reader(csv_file):
         if counter < start:
             counter += 1
@@ -198,11 +200,8 @@ def threads_start(file_reader, csv_file, threads_count):
     for i in xrange(threads_count):
         th = Thread(target=handler_thread)
         th.start()
+        print 'handler thread added'
         threads.append(th)
-
-        tw = Thread(target=writer_thread)
-        tw.start()
-        threads.append(tw)
 
     for t in threads:
         t.join()
