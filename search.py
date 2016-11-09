@@ -1,6 +1,6 @@
+#!/Users/Pro/PyCharmProjects/email-finder/.env/bin/python
 import logging
 import timeit
-import time
 from urlparse import urlparse
 from stop_domains import stop_domains
 import csv
