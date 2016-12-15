@@ -1,5 +1,4 @@
 beautifulsoup4==4.5.1
 google==1.9.3
-validate_email==1.3
-selenium
-pyDNS
+selenium==2.53.6
+pyDNS==2.3.6

@@ -1,6 +1,4 @@
-#!/Users/Pro/PyCharmProjects/email-finder/.env/bin/python
 import logging
-import timeit
 from urlparse import urlparse
 from stop_domains import stop_domains
 import csv
@@ -140,75 +138,67 @@ def validate(emails):
                 logger.info('TIMEOUT BITCH')
     return None
 
-done = 0
-start_time = timeit.default_timer()
-
-
-def handler_thread():
-    while True:
-        try:
-            row = q_initial.get(block=True, timeout=10)
-            name_list = list(row[0].lower().split(' '))
-            domain = parse_domains(row[1])
-            emails = make_variations(name_list, domain)
-            global done
-            valid = validate(emails)
-            if valid:
-                q_result.put((row[0], valid))
-                done += 1
-                logger.info('######## VALID EMAILS FOUND: {}'.format(done))
-                try:
-                    with open('results.txt', 'a') as result_file:
-                        result_file.write(str(q_result.get()) + '\n')
-                except Queue.Empty:
-                    print 'NOTHING TO WRITE BEACH'
-                    pass
-        except Queue.Empty:
-            print 'finished for {}'.format(timeit.default_timer() - start_time)
-
-
-def writer_thread():
-    """Write output to file here."""
-    while True:
-        try:
-            with open('results.txt', 'a') as result_file:
-                result_file.write(str(q_result.get()) + '\n')
-        except Queue.Empty:
-            print 'NOTHING TO WRITE BEACH'
-            break
-
-
-q_initial = Q()
-q_result = Q()
-
-
-def threads_start(file_reader, csv_file, threads_count):
-    counter = 0
-    end = 4000
-    start = 3
-    for row in file_reader(csv_file):
-        if counter < start:
-            counter += 1
-            continue
-        if counter == end:
-            break
-        q_initial.put(row)
-        counter += 1
-
-    threads = []
-
-    for i in xrange(threads_count):
-        th = Thread(target=handler_thread)
-        th.start()
-        print 'handler thread added'
-        threads.append(th)
-
-    for t in threads:
-        t.join()
-
-        print threads
-
 
 if __name__ == '__main__':
+
+    def handler_thread():
+        while True:
+            try:
+                row = q_initial.get(block=True, timeout=10)
+                name_list = list(row[0].lower().split(' '))
+                domain = parse_domains(row[1])
+                emails = make_variations(name_list, domain)
+                valid = validate(emails)
+                if valid:
+                    q_result.put((row[0], valid))
+                    try:
+                        with open('results.txt', 'a') as result_file:
+                            result_file.write(str(q_result.get()) + '\n')
+                    except Queue.Empty:
+                        print 'NOTHING TO WRITE BEACH'
+                        pass
+            except Queue.Empty:
+                return
+
+
+    def writer_thread():
+        """Write output to file here."""
+        while True:
+            try:
+                with open('results.txt', 'a') as result_file:
+                    result_file.write(str(q_result.get()) + '\n')
+            except Queue.Empty:
+                print 'NOTHING TO WRITE BEACH'
+                break
+
+
+    q_initial = Q()
+    q_result = Q()
+
+
+    def threads_start(file_reader, csv_file, threads_count):
+        counter = 0
+        end = 4000
+        start = 3
+        for row in file_reader(csv_file):
+            if counter < start:
+                counter += 1
+                continue
+            if counter == end:
+                break
+            q_initial.put(row)
+            counter += 1
+
+        threads = []
+
+        for i in xrange(threads_count):
+            th = Thread(target=handler_thread)
+            th.start()
+            print 'handler thread added'
+            threads.append(th)
+
+        for t in threads:
+            t.join()
+
     threads_start(csv_reader, FILE, 6)
 
